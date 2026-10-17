@@ -346,7 +346,6 @@ body.returned .returned-note{opacity:1}
   .tool{padding:6px 10px;font-size:11px}
   .stage{padding:26px 18px 40px;min-height:70vh}
   .covers{grid-template-columns:repeat(3,1fr);gap:10px}
-  .cover:nth-child(4),.cover:nth-child(5){display:none}
   .stage-tip{left:18px}
   .hotspot{width:74px;height:74px;margin:-37px 0 0 -37px}
   .slots{grid-template-columns:repeat(5,1fr);gap:6px}
@@ -1201,40 +1200,53 @@ body.returned .returned-note{opacity:1}
   ];
   var EGG2 = '「是你们的等待，让我的夏夜没有彻底落幕。」';
 
+  function showFinalActions() {
+    var host = $('#finalActions');
+    if (!host || host.dataset.on) return;
+    host.dataset.on = '1';
+    host.innerHTML = '<div class="cta-row" style="justify-content:center">' +
+      '<button class="btn ghost" id="toArchive2" type="button">查看档案</button>' +
+      '<button class="btn ghost" id="restart2" type="button">再读一次</button></div>';
+    $('#toArchive2').addEventListener('click', openArchive);
+    $('#restart2').addEventListener('click', function () {
+      openModal('<h3>再读一次</h3><p>会清空所有进度与碎片。</p><div class="cta-row">' +
+        '<button class="btn primary" id="doReset2" type="button">确定</button>' +
+        '<button class="btn ghost" id="noReset2" type="button">算了</button></div>');
+      $('#doReset2').addEventListener('click', function () {
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        S = loadState(); closeModal(); go('home'); render();
+      });
+      $('#noReset2').addEventListener('click', closeModal);
+    });
+  }
+
   function ch4Finish(app) {
     S.ch.ch4 = true; addFrag('f4'); addFrag('g2'); save(); updateChrome();
 
+    var colorsDone = !!S.egg3;
     var host = $('#ch4after');
     host.innerHTML = '<div class="covers ending-covers" aria-hidden="true">' + coversMarkup() + '</div>' +
       '<p class="whisper" id="whisper4"></p>' +
-      '<div class="cta-row" style="justify-content:center"><button class="btn primary" id="colorBtn" type="button">让颜色回来</button></div>' +
+      (colorsDone ? '' : '<div class="cta-row" style="justify-content:center"><button class="btn primary" id="colorBtn" type="button">让颜色回来</button></div>') +
       '<p class="returned-note" id="returnedNote">他正在慢慢回来。</p>' +
       '<div id="finalActions"></div>' +
       '<p class="final-note">本页文字为同人虚构创作，不代表本人发言。真实世界里，请以官方发布为准。</p>';
 
-    type($('#whisper4'), EGG2, 58);
+    if (colorsDone) {
+      $('#whisper4').textContent = EGG2;
+      showFinalActions();
+    } else {
+      type($('#whisper4'), EGG2, 58);
+    }
 
-    $('#colorBtn').addEventListener('click', function () {
+    var btn = $('#colorBtn');
+    if (btn) btn.addEventListener('click', function () {
       S.egg3 = true; save();
       document.body.classList.add('returned');
-      var btn = $('#colorBtn');
       btn.disabled = true;
       btn.textContent = '颜色正在回来…';
       window.setTimeout(function () {
-        $('#finalActions').innerHTML = '<div class="cta-row" style="justify-content:center">' +
-          '<button class="btn ghost" id="toArchive2" type="button">查看档案</button>' +
-          '<button class="btn ghost" id="restart2" type="button">再读一次</button></div>';
-        $('#toArchive2').addEventListener('click', openArchive);
-        $('#restart2').addEventListener('click', function () {
-          openModal('<h3>再读一次</h3><p>会清空所有进度与碎片。</p><div class="cta-row">' +
-            '<button class="btn primary" id="doReset2" type="button">确定</button>' +
-            '<button class="btn ghost" id="noReset2" type="button">算了</button></div>');
-          $('#doReset2').addEventListener('click', function () {
-            try { localStorage.removeItem(KEY); } catch (e) {}
-            S = loadState(); closeModal(); go('home'); render();
-          });
-          $('#noReset2').addEventListener('click', closeModal);
-        });
+        showFinalActions();
         btn.style.display = 'none';
       }, 1700);
     });
